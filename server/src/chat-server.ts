@@ -12,8 +12,8 @@ export class ChatServer {
     private port: string | number;
 
     constructor() {
-        this.createApp();
         this.config();
+        this.createApp();
         this.createServer();
         this.sockets();
         this.listen();
@@ -27,12 +27,12 @@ export class ChatServer {
         this.server = createServer(this.app);
     }
 
-    private config(): void {
-        this.port = process.env.PORT || ChatServer.PORT;
-    }
-
     private sockets(): void {
         this.io = socketIo(this.server);
+    }
+
+    private config(): void {
+        this.port = process.env.PORT || ChatServer.PORT;
     }
 
     private listen(): void {
