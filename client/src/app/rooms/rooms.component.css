@@ -1,0 +1,14 @@
+[mat-fab] {
+  right: 2%;
+  z-index: 1;
+}
+
+.profile {
+  position: absolute;
+  top: 25px;
+}
+
+.add-room {
+  position: fixed;
+  bottom: 20px;
+}

@@ -1,0 +1,17 @@
+<button mat-fab class="profile" (click)="onClickUserInfo()">
+  <mat-icon>person</mat-icon>
+</button>
+<button mat-fab color="primary" class="add-room" (click)="add()">
+  <mat-icon>add</mat-icon>
+</button>
+
+<mat-list>
+  <mat-list-item *ngFor="let room of roomService.getRooms()">
+    <mat-icon mat-list-icon>{{room.hasToken() ? 'lock' : 'public'}}</mat-icon>
+    <h4 routerLink="/chat/{{room.id}}" mat-line>{{room.name}}</h4>
+  </mat-list-item>
+
+  <div mat-subheader *ngIf="roomService.isEmpty()">
+    No rooms created yet.
+  </div>
+</mat-list>

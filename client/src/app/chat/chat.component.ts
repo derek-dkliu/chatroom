@@ -1,25 +1,29 @@
-import { Component, OnInit, ElementRef, QueryList, ViewChild, ViewChildren, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ElementRef, QueryList, ViewChild, ViewChildren, AfterViewInit, OnDestroy } from '@angular/core';
 import { MatList, MatListItem, MatDialog } from '@angular/material';
+import {Location} from '@angular/common';
 
 import { Action } from './shared/models/action';
 import { Event } from './shared/models/event';
-import { User } from './shared/models/user.model';
 import { Message } from './shared/models/message.model';
 import { SocketService } from './shared/services/socket.service';
-import { DialogUserComponent, DialogUserType } from './dialog-user/dialog-user.component';
+import { ActivatedRoute } from '@angular/router';
+import { UserService } from './shared/services/user.service';
+import { User } from './shared/models/user.model';
+import { TokenDialogComponent } from './token-dialog/token-dialog.component';
+import { Room } from '../rooms/shared/models/room';
+import { RoomService } from './shared/services/room.service';
 
-
-const AVATAR_URL = 'https://api.adorable.io/avatars/200';
 
 @Component({
   selector: 'app-chat',
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.css']
 })
-export class ChatComponent implements OnInit, AfterViewInit {
+export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
   action = Action;
   user: User;
-  messages: Message[] = [];
+  validToken: boolean;
+  roomId: string;
   messageContent: string;
   ioConnection: any;
 
@@ -30,22 +34,33 @@ export class ChatComponent implements OnInit, AfterViewInit {
   @ViewChildren(MatListItem, { read: ElementRef }) matListItems: QueryList<MatListItem>;
 
   constructor(
+    private userService: UserService,
+    public roomService: RoomService,
     private socketService: SocketService,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private route: ActivatedRoute,
+    private location: Location,
   ) { }
 
   ngOnInit(): void {
-    this.initUser();
-    // Using timeout due to https://github.com/angular/angular/issues/14748
-    setTimeout(() => {
-      this.openUserPopup({
-        disableClose: true,
-        data: {
-          title: 'Welcome',
-          dialogType: DialogUserType.NEW
-        }
-      });
-    }, 0);
+    this.user = this.userService.getUser();
+    this.roomId = this.route.snapshot.paramMap.get('id');
+    const room = this.roomService.getRoom(+this.roomId);
+    if (room !== undefined) {
+      if (room.hasToken()) {
+        setTimeout(() => {
+          this.openTokenDialog();
+        }, 0);
+      } else {
+        this.initIoConnection();
+      }
+
+      this.validToken = true;
+      this.roomService.setTitle(room.name);
+    } else {
+      this.goback();
+      console.log('invalid room');
+    }
   }
 
   ngAfterViewInit(): void {
@@ -53,6 +68,15 @@ export class ChatComponent implements OnInit, AfterViewInit {
     this.matListItems.changes.subscribe(elements => {
       this.scrollToBottom();
     });
+  }
+
+  ngOnDestroy() {
+    this.roomService.setTitle(null);
+    if (this.validToken) {
+      this.roomService.cleanMessages();
+      this.sendNotification(Action.LEFT);
+    }
+    this.socketService.removeAllListeners();
   }
 
   // auto-scroll fix: inspired by this stack overflow post
@@ -64,49 +88,17 @@ export class ChatComponent implements OnInit, AfterViewInit {
     }
   }
 
-  public onClickUserInfo() {
-    this.openUserPopup({
-      data: {
-        username: this.user.name,
-        title: 'Edit Details',
-        dialogType: DialogUserType.EDIT
-      }
-    });
-  }
-
-  private initUser(): void {
-    const randomId = this.getRandomId();
-    this.user = {
-      id: randomId,
-      avatar: `${AVATAR_URL}/${randomId}.png`
-    };
-  }
-
-  private openUserPopup(params): void {
-    const dialogRef = this.dialog.open(DialogUserComponent, params);
-    dialogRef.afterClosed().subscribe(paramsDialog => {
-      if (!paramsDialog) {
-        return;
-      }
-
-      this.user.name = paramsDialog.username;
-      if (paramsDialog.dialogType === DialogUserType.NEW) {
-        this.initIoConnection();
-        this.sendNotification(paramsDialog, Action.JOINED);
-      } else if (paramsDialog.dialogType === DialogUserType.EDIT) {
-        if (paramsDialog.username !== paramsDialog.previousUsername) {
-          this.sendNotification(paramsDialog, Action.RENAME);
-        }
-      }
-    });
-  }
-
   private initIoConnection(): void {
-    this.socketService.initSocket();
+    this.sendNotification(Action.JOINED);
 
     this.ioConnection = this.socketService.onMessage()
       .subscribe((message: Message) => {
-        this.messages.push(message);
+        this.roomService.addMessage(message);
+      });
+
+    this.socketService.onRoomHistory()
+      .subscribe((history) => {
+        this.roomService.initMessages(history);
       });
 
     this.socketService.onEvent(Event.CONNECT)
@@ -127,33 +119,45 @@ export class ChatComponent implements OnInit, AfterViewInit {
 
     this.socketService.send({
       from: this.user,
-      content: message
+      content: message,
+      roomId: this.roomId
     });
     this.messageContent = null;
   }
 
-  public sendNotification(params: any, action: Action): void {
+  public sendNotification(action: Action): void {
     let message: Message;
 
-    if (action === Action.JOINED) {
+    if (action === Action.JOINED || action === Action.LEFT) {
       message = {
         from: this.user,
-        action: action
-      };
-    } else if (action === Action.RENAME) {
-      message = {
         action: action,
-        content: {
-          username: this.user.name,
-          previousUsername: params.previousUsername
-        }
+        roomId: this.roomId,
       };
     }
 
     this.socketService.send(message);
   }
 
-  private getRandomId(): number {
-    return Math.floor(Math.random() * (1000000)) + 1;
+  private openTokenDialog(): void {
+    const dialogRef = this.dialog.open(TokenDialogComponent, {
+      disableClose: true,
+      data: {
+        roomId: this.roomId
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(paramsDialog => {
+      this.validToken = paramsDialog.valid;
+      if (this.validToken) {
+        this.initIoConnection();
+      } else {
+        this.goback();
+      }
+    });
+  }
+
+  goback() {
+    this.location.back();
   }
 }

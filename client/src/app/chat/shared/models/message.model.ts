@@ -5,4 +5,5 @@ export class Message {
   from?: User;
   content?: any;
   action?: Action;
+  roomId?: string;
 }

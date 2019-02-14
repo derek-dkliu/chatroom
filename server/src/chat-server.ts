@@ -3,6 +3,7 @@ import * as express from 'express';
 import * as socketIo from 'socket.io';
 
 import { Message } from './model/message.model';
+import { Room } from './model/room.model';
 
 export class ChatServer {
     public static readonly PORT:number = 8080;
@@ -10,6 +11,9 @@ export class ChatServer {
     private server: Server;
     private io: SocketIO.Server;
     private port: string | number;
+
+    private rooms = [];
+    private histories = [];
 
     constructor() {
         this.config();
@@ -29,7 +33,10 @@ export class ChatServer {
 
     private sockets(): void {
         this.io = socketIo(this.server);
+        // this.chatSpace = this.io.of('/chat');
+        // this.roomSpace = this.io.of('/room');
     }
+
 
     private config(): void {
         this.port = process.env.PORT || ChatServer.PORT;
@@ -41,14 +48,36 @@ export class ChatServer {
         });
 
         this.io.on('connect', (socket: any) => {
-            console.log('Connected client on port %s.', this.port);
-            socket.on('message', (m: Message) => {
-                console.log('[server](message): %s', JSON.stringify(m));
-                this.io.emit('message', m);
+            console.log(socket.id, "connected.");
+
+            socket.on('create', (room: Room) => {
+                console.log('[server](create): %s', JSON.stringify(room));
+                this.io.emit('create', room);
+                this.rooms.push(room);
             });
 
-            socket.on('disconnect', () => {
-                console.log('Client disconnected');
+            socket.on('roomlist', () => {
+                this.io.emit('roomlist', this.rooms);
+            });
+
+            socket.on('message', (m: Message) => {
+                console.log('[server](message): %s', JSON.stringify(m));
+
+                if (m.action === 0) {
+                    socket.join(m.roomId);
+                    this.histories[m.roomId] = this.histories[m.roomId] || [];
+                    socket.emit('roomhistory', this.histories[m.roomId]);
+                    console.log('Joined room %s.', m.roomId);
+                } else if (m.action === 1) {
+                    socket.leave(m.roomId);
+                }
+
+                this.io.to(m.roomId).emit('message', m);
+                this.histories[m.roomId].push(m);
+            });
+
+            socket.on('disconnect', (reason) => {
+                console.log(socket.id, "disconnected.");
             });
         });
     }

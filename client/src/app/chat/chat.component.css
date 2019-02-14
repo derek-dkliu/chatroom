@@ -1,7 +1,7 @@
 [mat-fab] {
   position: absolute;
   right: 2%;
-  top: 35px;
+  top: 25px;
   z-index: 1;
 }
 
@@ -19,10 +19,10 @@
 .chat-list {
   overflow: auto;
   position: fixed;
-  top: 90px;
+  top: 80px;
   left: 25px;
   right: 25px;
-  bottom: 120px;
+  bottom: 110px;
 }
 
 .chat-list-item {
