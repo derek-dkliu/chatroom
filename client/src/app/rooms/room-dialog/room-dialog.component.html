@@ -1,13 +1,13 @@
 <h2 mat-dialog-title>New room</h2>
 
 <mat-dialog-content>
-  <mat-form-field>
+  <mat-form-field class="full-form-field">
     <input matInput name="name" placeholder="Room name"
             [(ngModel)]="params.name" [formControl]="nameFormControl" required>
     <mat-error>This field is required</mat-error>
     <mat-hint>Please type your room name</mat-hint>
   </mat-form-field>
-  <mat-form-field>
+  <mat-form-field class="full-form-field">
     <input matInput name="token" placeholder="Password" [(ngModel)]="params.token">
   </mat-form-field>
 </mat-dialog-content>
