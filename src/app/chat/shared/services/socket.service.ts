@@ -5,8 +5,8 @@ import * as socketIo from 'socket.io-client';
 import { Message } from '../models/message.model';
 import { Event } from '../models/event';
 import { Room } from 'src/app/rooms/shared/models/room';
+import { environment } from 'src/environments/environment';
 
-const SERVER_URL = 'http://localhost:8080';
 
 @Injectable({
   providedIn: 'root'
@@ -25,7 +25,7 @@ export class SocketService {
 
   public initSocket(): void {
     if (!this.isConnected()) {
-      this.socket = socketIo(SERVER_URL);
+      this.socket = socketIo(environment.serverUrl);
     }
   }
 
