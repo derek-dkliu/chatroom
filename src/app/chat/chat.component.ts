@@ -10,7 +10,6 @@ import { ActivatedRoute } from '@angular/router';
 import { UserService } from './shared/services/user.service';
 import { User } from './shared/models/user.model';
 import { TokenDialogComponent } from './token-dialog/token-dialog.component';
-import { Room } from '../rooms/shared/models/room';
 import { RoomService } from './shared/services/room.service';
 
 

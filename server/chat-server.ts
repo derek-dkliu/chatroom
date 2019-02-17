@@ -1,12 +1,13 @@
 import { createServer, Server } from 'http';
 import * as express from 'express';
+import * as path from 'path';
 import * as socketIo from 'socket.io';
 
 import { Message } from './model/message.model';
 import { Room } from './model/room.model';
 
 export class ChatServer {
-    public static readonly PORT:number = 8080;
+    public static readonly PORT: number = 8080;
     private app: express.Application;
     private server: Server;
     private io: SocketIO.Server;
@@ -25,6 +26,13 @@ export class ChatServer {
 
     private createApp(): void {
         this.app = express();
+
+        // Serve only the static files form the dist directory
+        this.app.use(express.static(__dirname + '/public'));
+
+        this.app.get('/*', (req, res) => {
+          res.sendFile(path.join(__dirname + '/public/index.html'));
+        });
     }
 
     private createServer(): void {
@@ -33,8 +41,6 @@ export class ChatServer {
 
     private sockets(): void {
         this.io = socketIo(this.server);
-        // this.chatSpace = this.io.of('/chat');
-        // this.roomSpace = this.io.of('/room');
     }
 
 
@@ -48,10 +54,10 @@ export class ChatServer {
         });
 
         this.io.on('connect', (socket: any) => {
-            console.log(socket.id, "connected.");
+            console.log(socket.id, 'connected.');
 
             socket.on('create', (room: Room) => {
-                console.log('[server](create): %s', JSON.stringify(room));
+                // console.log('[server](create): %s', JSON.stringify(room));
                 this.io.emit('create', room);
                 this.rooms.push(room);
             });
@@ -67,7 +73,7 @@ export class ChatServer {
                     socket.join(m.roomId);
                     this.histories[m.roomId] = this.histories[m.roomId] || [];
                     socket.emit('roomhistory', this.histories[m.roomId]);
-                    console.log('Joined room %s.', m.roomId);
+                    // console.log('Joined room %s.', m.roomId);
                 } else if (m.action === 1) {
                     socket.leave(m.roomId);
                 }
@@ -77,7 +83,7 @@ export class ChatServer {
             });
 
             socket.on('disconnect', (reason) => {
-                console.log(socket.id, "disconnected.");
+                console.log(socket.id, 'disconnected.');
             });
         });
     }
