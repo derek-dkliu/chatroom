@@ -9,10 +9,34 @@ mat-list-item:hover {
 
 .profile {
   position: absolute;
-  top: 25px;
+  top: 20px;
 }
 
 .add-room {
   position: fixed;
-  bottom: 20px;
+  bottom: 40px;
 }
+
+.flex-container-vertical {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 50px);
+}
+
+.main {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+footer {
+  flex: 0 0 auto;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 0.7em;
+  color: #FFF;
+  background-color: #666;
+  padding: 10px 20px;
+  text-align: right;
+}
+

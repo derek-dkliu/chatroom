@@ -7,7 +7,7 @@ import { RoomService } from './chat/shared/services/room.service';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'Chat Room';
+  title = 'Chitchat';
 
   constructor(public roomService: RoomService) { }
 }

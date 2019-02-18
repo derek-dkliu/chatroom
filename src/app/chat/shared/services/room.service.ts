@@ -20,8 +20,16 @@ export class RoomService {
     return this.title;
   }
 
-  public setTitle(title: string) {
-    return this.title = title;
+  public setTitle(room: Room) {
+    if (room !== null) {
+      let mode = '';
+      if (room.hasToken()) {
+        mode = 'private';
+      } else {
+        mode = 'public';
+      }
+      this.title = `${room.name} (${mode})`;
+    }
   }
 
   public isEmpty(): boolean {

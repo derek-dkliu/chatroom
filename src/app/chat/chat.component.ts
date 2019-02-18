@@ -55,7 +55,7 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.validToken = true;
-      this.roomService.setTitle(room.name);
+      this.roomService.setTitle(room);
     } else {
       this.goback();
       console.log('invalid room');
